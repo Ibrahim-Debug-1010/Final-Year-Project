@@ -6,10 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import time
-import board
-import busio
-import smbus2 as smbus  # For SparkFun AS726x I2C communication
-import time
 import sys
 
 class AS726xSensor:
@@ -59,10 +55,25 @@ class AS726xSensor:
     
     def __init__(self):
         """Initialize the AS726x sensor."""
+        self.connected = False
+        self.hardware_available = False
         try:
+            # Import hardware-specific modules only if needed
+            try:
+                import smbus2 as smbus  # For SparkFun AS726x I2C communication
+                self.smbus = smbus
+                self.hardware_available = True
+            except ImportError:
+                print("smbus2 not available. Hardware sensor will not work.")
+                self.hardware_available = False
+
+            if not self.hardware_available:
+                print("AS726xSensor: Hardware modules not available, running in simulation mode.")
+                return
+
             # Initialize I2C bus
-            self.bus = smbus.SMBus(1)  # Using I2C bus 1 on Raspberry Pi
-            
+            self.bus = self.smbus.SMBus(1)  # Using I2C bus 1 on Raspberry Pi
+
             # Check if sensor is connected
             try:
                 device_type = self.read_register(self.DEVICE_TYPE)
@@ -71,11 +82,11 @@ class AS726xSensor:
             except Exception as e:
                 print(f"Error reading device type: {e}")
                 raise
-            
+
             # Configure the sensor
             self.set_gain(self.GAIN_18X)  # Higher gain for better signal
             self.set_integration_time(7)  # 179.2ms integration time
-            
+
             print("SparkFun AS726x sensor initialized successfully")
             self.connected = True
         except Exception as e:
@@ -84,6 +95,8 @@ class AS726xSensor:
     
     def read_register(self, reg_addr):
         """Read a register from the AS726x."""
+        if not self.hardware_available:
+            return None
         try:
             # Write the register address to the virtual register
             self.bus.write_byte_data(self.AS726X_ADDR, 0x00, reg_addr)
@@ -95,6 +108,8 @@ class AS726xSensor:
     
     def write_register(self, reg_addr, data):
         """Write to a register on the AS726x."""
+        if not self.hardware_available:
+            return False
         try:
             # Write the register address to the virtual register
             self.bus.write_byte_data(self.AS726X_ADDR, 0x01, reg_addr)
@@ -107,6 +122,8 @@ class AS726xSensor:
     
     def set_gain(self, gain):
         """Set the gain of the sensor."""
+        if not self.hardware_available:
+            return
         # Read current control setup
         control = self.read_register(self.CONTROL_SETUP)
         # Clear gain bits (bits 4:2)
@@ -118,6 +135,8 @@ class AS726xSensor:
     
     def set_integration_time(self, time_setting):
         """Set the integration time of the sensor."""
+        if not self.hardware_available:
+            return False
         if time_setting < 0 or time_setting > 10:
             print("Integration time setting must be between 0 and 10")
             return False
@@ -128,6 +147,8 @@ class AS726xSensor:
     
     def data_ready(self):
         """Check if sensor data is ready."""
+        if not self.hardware_available:
+            return False
         control = self.read_register(self.CONTROL_SETUP)
         return (control & self.DATA_RDY) != 0
     
@@ -138,6 +159,8 @@ class AS726xSensor:
             dict: Dictionary with keys 'R', 'S', 'T', 'U', 'V', 'W' containing
                  the 16-bit values for each channel.
         """
+        if not self.hardware_available:
+            return {}
         channels = {}
         
         # Read R channel (760nm - closest to glucose absorption)
@@ -182,7 +205,7 @@ class AS726xSensor:
         Returns:
             float: Averaged NIR reading
         """
-        if not self.connected:
+        if not self.connected or not self.hardware_available:
             return None
             
         readings = []
