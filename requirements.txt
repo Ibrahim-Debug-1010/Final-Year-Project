@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+matplotlib
+joblib
+scikit-learn
+altair
+shap
+smbus2
+qwiic_as726x
+sympy
+scipy
