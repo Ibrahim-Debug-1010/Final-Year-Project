@@ -7,6 +7,6 @@ scikit-learn
 altair
 shap
 smbus2
-qwiic_as726x
+sparkfun-qwiic-as726x
 sympy
 scipy
