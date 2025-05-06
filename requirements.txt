@@ -10,3 +10,7 @@ smbus2
 sparkfun-qwiic-as726x
 sympy
 scipy
+lightgbm
+seaborn
+tensorflow
+keras
