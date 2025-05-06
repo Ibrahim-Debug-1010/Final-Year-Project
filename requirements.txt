@@ -14,5 +14,3 @@ lightgbm
 seaborn
 tensorflow
 keras
-board
-busio
